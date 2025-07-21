@@ -30,11 +30,20 @@ public class AnalyticsController {
     }
 
     /**
-     * Gets a summary of event counts by type.
+     * Gets a cached summary of event counts by type from elastic search repository.
      * @return A response entity with the event summary.
      */
     @GetMapping("/summary")
     public ResponseEntity<Map<String, Long>> getEventSummary() {
         return ResponseEntity.ok(analyticsService.getEventSummary());
+    }
+
+    /**
+     * Gets a summary of event counts by type from elastic search repository (non-cached). This is a development mode endpoint.
+     * @return A response entity with the event summary.
+     */
+    @GetMapping("/summary-dev")
+    public ResponseEntity<Map<String, Long>> getEventSummaryDevMode() {
+        return ResponseEntity.ok(analyticsService.getEventSummaryDevMode());
     }
 }
