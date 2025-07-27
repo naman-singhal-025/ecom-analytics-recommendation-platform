@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,10 @@ public class ProductService {
     
     @Autowired
     private OrderItemRepository orderItemRepository;
+
+    // ApplicationEventPublisher is used to publish events, such as product creation or updates.
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
     
     /**
      * Get all products.
@@ -79,7 +84,13 @@ public class ProductService {
             product.setUpdatedAt(LocalDateTime.now());
         }
         
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+        /**
+         * Publish the product creation event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+         * after the transaction commits.
+         */
+        applicationEventPublisher.publishEvent(savedProduct);
+        return savedProduct;
     }
     
     /**
@@ -112,8 +123,14 @@ public class ProductService {
                     existingProduct.setStockQuantity(productDetails.getStockQuantity());
                     existingProduct.setImageUrl(productDetails.getImageUrl());
                     existingProduct.setUpdatedAt(LocalDateTime.now());
-                    
-                    return productRepository.save(existingProduct);
+
+                    Product savedProduct = productRepository.save(existingProduct);
+                    /*
+                     * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange} 
+                     * after the transaction commits.
+                     */
+                    applicationEventPublisher.publishEvent(savedProduct);
+                    return savedProduct;
                 });
     }
     
@@ -136,6 +153,11 @@ public class ProductService {
         return productRepository.findById(id)
                 .map(product -> {
                     productRepository.delete(product);
+                    /**
+                     * Publish the product deletion event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+                     * after the transaction commits.
+                     */
+                    applicationEventPublisher.publishEvent(product);
                     return true;
                 })
                 .orElse(false);
@@ -169,7 +191,13 @@ public class ProductService {
                 .map(product -> {
                     product.setStockQuantity(quantity);
                     product.setUpdatedAt(LocalDateTime.now());
-                    return productRepository.save(product);
+                    Product savedProduct = productRepository.save(product);
+                    /**
+                     * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+                     * after the transaction commits.
+                     */
+                    applicationEventPublisher.publishEvent(savedProduct);
+                    return savedProduct;
                 });
     }
     
@@ -203,7 +231,13 @@ public class ProductService {
                     
                     product.setStockQuantity(newStock);
                     product.setUpdatedAt(LocalDateTime.now());
-                    return productRepository.save(product);
+                    Product savedProduct = productRepository.save(product);
+                    /**
+                     * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+                     * after the transaction commits.
+                     */
+                    applicationEventPublisher.publishEvent(savedProduct);
+                    return savedProduct;
                 });
     }
     
