@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -36,6 +37,9 @@ public class ProductService {
     // ApplicationEventPublisher is used to publish events, such as product creation or updates.
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private CacheManager cacheManager;
     
     /**
      * Get all products.
@@ -87,7 +91,7 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
         /**
          * Publish the product creation event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
-         * after the transaction commits.
+         * after the transaction commits as it is annotated with @TransactionalEventListener.
          */
         applicationEventPublisher.publishEvent(savedProduct);
         return savedProduct;
@@ -103,7 +107,10 @@ public class ProductService {
     @Transactional
     @Caching(
         evict = {
+            // You cannot selectively remove one product from products list cache because it’s not cached by individual product ID, but as one bulk result.
             @CacheEvict(value = "products", allEntries = true),
+            // evicts list of products in the category of the updated product. {c1 -> l1, c2 -> l2, ...} . So, list from one category is evicted.
+            // here condition check happen before key generation, so if the product is not found, it will not try to evict the cache.
             @CacheEvict(value = "categoryProducts", key = "#result.isPresent() ? #result.get().getCategory() : ''", condition = "#result.isPresent()"),
             @CacheEvict(value = "popularProducts", allEntries = true)
         },
@@ -113,8 +120,18 @@ public class ProductService {
     )
     public Optional<Product> updateProduct(Long id, Product productDetails) {
         logger.info("Updating product with ID: {}", id);
-        
-        return productRepository.findById(id)
+
+        String oldCategory = productRepository.findById(id)
+                                              .map(Product::getCategory)
+                                              .orElse(null);
+        // Manually evict the product list for the old category to prevent stale data,
+        // especially if the category was changed during the update.
+        if (oldCategory != null) {
+            // Cache name is pre-registered in cacheManager configuration
+            cacheManager.getCache("categoryProducts").evict(oldCategory);
+        }
+
+        return getProductById(id)
                 .map(existingProduct -> {
                     existingProduct.setName(productDetails.getName());
                     existingProduct.setDescription(productDetails.getDescription());
@@ -144,13 +161,14 @@ public class ProductService {
     @Caching(evict = {
         @CacheEvict(value = "productById", key = "#id"),
         @CacheEvict(value = "products", allEntries = true),
+        //return type is boolean, not Optional<Product>, so SpEL(Spring Expression Language) (#result.get().getCategory()) can’t access the deleted product’s category after deletion.
         @CacheEvict(value = "categoryProducts", allEntries = true),
         @CacheEvict(value = "popularProducts", allEntries = true)
     })
     public boolean deleteProduct(Long id) {
         logger.info("Deleting product with ID: {}", id);
         
-        return productRepository.findById(id)
+        return getProductById(id)
                 .map(product -> {
                     productRepository.delete(product);
                     /**
@@ -187,7 +205,7 @@ public class ProductService {
             throw new IllegalArgumentException("Stock quantity cannot be negative");
         }
         
-        return productRepository.findById(id)
+        return getProductById(id)
                 .map(product -> {
                     product.setStockQuantity(quantity);
                     product.setUpdatedAt(LocalDateTime.now());
@@ -221,7 +239,7 @@ public class ProductService {
     public Optional<Product> adjustStock(Long id, Integer adjustment) {
         logger.info("Adjusting stock for product ID: {} by {}", id, adjustment);
         
-        return productRepository.findById(id)
+        return getProductById(id)
                 .map(product -> {
                     int newStock = product.getStockQuantity() + adjustment;
                     
