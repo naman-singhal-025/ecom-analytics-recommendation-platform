@@ -79,6 +79,7 @@ public class UserBehaviorService {
         logger.info("Saved user event to MongoDB with ID: {}", savedEvent.getId());
 
         // Save to Elasticsearch for searching and analytics
+        // Here we are not adding cache eviction on every save, as for analytics slightly stale data is acceptable.
         try {
             userEventSearchRepository.save(savedEvent);
             logger.info("Indexed user event in Elasticsearch with ID: {}", savedEvent.getId());

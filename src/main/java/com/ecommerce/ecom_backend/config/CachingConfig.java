@@ -59,6 +59,15 @@ public class CachingConfig {
     /**
      * Creates a Redis template for general-purpose operations.
      * bean is created at startup and injected wherever Redis operations are needed.
+     * 
+     * Currently, no use of this bean in the application.
+     * Mainly used for custom operations that are not covered by the cache manager.
+     * Example:
+     * - Distributed locks
+     * - Atomic counters
+     * - Manual TTL setting
+     * - Pub/Sub
+     * - Caching outside of @Cacheable
      * @param connectionFactory the Redis connection factory
      * @return the Redis template
      */
@@ -106,6 +115,24 @@ public class CachingConfig {
         // Event summary cache: 5 minutes TTL (frequently changing)
         cacheConfigurations.put("eventSummary", defaultConfig.entryTtl(Duration.ofMinutes(5)));
         
+        // Top viewed products cache: 5 minutes TTL
+        cacheConfigurations.put("topViewedProducts", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
+        // Top purchased products cache: 5 minutes TTL
+        cacheConfigurations.put("topPurchasedProducts", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
+        // Top categories cache: 5 minutes TTL
+        cacheConfigurations.put("topCategories", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
+        // Trending products cache: 5 minutes TTL
+        cacheConfigurations.put("trendingProducts", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
+        // Trending categories cache: 5 minutes TTL
+        cacheConfigurations.put("trendingCategories", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
+        // Product conversion rates cache: 5 minutes TTL
+        cacheConfigurations.put("productConversionRates", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
         // Build the cache manager
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
