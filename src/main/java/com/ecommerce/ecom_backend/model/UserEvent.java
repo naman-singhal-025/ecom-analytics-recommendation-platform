@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 @org.springframework.data.elasticsearch.annotations.Document(indexName = "user_events")
 public class UserEvent {
     
+    // @Id annotated field will be mapped as _id in Elastic Search and MongoDB irrespective of the field name.
     @Id
     private String id;
     
