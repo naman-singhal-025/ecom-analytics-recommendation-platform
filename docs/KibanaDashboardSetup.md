@@ -8,6 +8,16 @@ This document provides instructions for setting up Kibana dashboards to visualiz
 - The e-commerce backend application is running and sending data to Elasticsearch
 - Access to the Kibana web interface
 
+## Quick Setup: Import Pre-Built Dashboards
+
+To save time, you can import the pre-built dashboards and visualizations provided in this project:
+
+1. Open Kibana in your web browser (default: http://localhost:5601)
+2. Go to **Stack Management > Saved Objects**
+3. Click **Import** and select the file: `docs/kibana-dashboards-export.ndjson`
+4. When prompted, choose to overwrite any existing objects if you want to update dashboards.
+5. After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", and "E-commerce Category Analytics" available in the Dashboard section.
+
 ## Connecting Kibana to Elasticsearch
 
 1. Open Kibana in your web browser (default: http://localhost:5601)
