@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.ecom_backend.model.UserEvent;
-import com.ecommerce.ecom_backend.repo.elasticsearch.UserEventSearchRepository;
 import com.ecommerce.ecom_backend.repo.mongo.UserEventRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,9 +32,6 @@ public class UserBehaviorService {
     
     @Autowired
     private UserEventRepository userEventRepository;
-
-    @Autowired
-    private UserEventSearchRepository userEventSearchRepository;
     
     @Autowired
     private KafkaProducerService kafkaProducerService;
@@ -74,25 +70,18 @@ public class UserBehaviorService {
             event.setUserAgent(request.getHeader("User-Agent"));
         }
         
-        // Save to MongoDB
-        UserEvent savedEvent = userEventRepository.save(event);
-        logger.info("Saved user event to MongoDB with ID: {}", savedEvent.getId());
+        // Send to Kafka for real-time processing and downstream persistence
+        // this event will be consumed by AnalyticsConsumerService and saved to Elasticsearch as well as MongoDB
+        kafkaProducerService.sendUserEvent(event);
 
-        // Save to Elasticsearch for searching and analytics
-        // Here we are not adding cache eviction on every save, as for analytics slightly stale data is acceptable.
-        try {
-            userEventSearchRepository.save(savedEvent);
-            logger.info("Indexed user event in Elasticsearch with ID: {}", savedEvent.getId());
-        } catch (Exception e) {
-            logger.error("Error indexing user event in Elasticsearch: {}", e.getMessage());
-            // Optionally, add retry logic or a dead-letter queue here
-        }
-        
-        // Send to Kafka for real-time processing
-        kafkaProducerService.sendUserEvent(savedEvent);
-        
-        return savedEvent;
+        return event;
     }
+    
+    /**
+     * Below all methods are not currently exposed via REST endpoints in UserEventController
+     * but can be used internally or in future endpoints.
+     * They provide various ways to query user events from the MongoDB repository.
+     */
     
     /**
      * Get user events for a specific user
