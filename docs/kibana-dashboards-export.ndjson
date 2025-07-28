@@ -1,5 +1,3 @@
-# Kibana NDJSON Export for E-commerce Analytics Dashboards
-# Import this file in Kibana (Stack Management > Saved Objects > Import)
 {"type":"dashboard","id":"ecommerce-event-overview","attributes":{"title":"E-commerce Event Overview","description":"Overview of all user events","panelsJSON":"[]","optionsJSON":"{\"useMargins\":true}","version":1},"references":[]}
 {"type":"dashboard","id":"ecommerce-product-analytics","attributes":{"title":"E-commerce Product Analytics","description":"Product-specific analytics","panelsJSON":"[]","optionsJSON":"{\"useMargins\":true}","version":1},"references":[]}
 {"type":"dashboard","id":"ecommerce-category-analytics","attributes":{"title":"E-commerce Category Analytics","description":"Category-specific analytics","panelsJSON":"[]","optionsJSON":"{\"useMargins\":true}","version":1},"references":[]}
