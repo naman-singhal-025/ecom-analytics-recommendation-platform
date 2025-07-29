@@ -1,16 +1,16 @@
-# Kibana Dashboard Setup for E-commerce Analytics
+# Kibana 7.17.x Dashboard Setup for E-commerce Analytics
 
-This document provides instructions for setting up Kibana dashboards to visualize the e-commerce analytics data stored in Elasticsearch.
+This guide is tailored for Kibana and Elasticsearch version **7.17.15**.
 
 ## Prerequisites
 
-- Elasticsearch and Kibana are installed and running
+- Elasticsearch and Kibana 7.17.x are installed and running
 - The e-commerce backend application is running and sending data to Elasticsearch
 - Access to the Kibana web interface
 
 ## Step-by-Step: Quick Setup Using Pre-Built Dashboards
 
-Follow these steps in order to set up your analytics dashboards in Kibana:
+Follow these steps to set up your analytics dashboards in Kibana 7.17.x:
 
 ### 1. Open Kibana
 
@@ -19,19 +19,19 @@ Follow these steps in order to set up your analytics dashboards in Kibana:
 ### 2. Import Pre-Built Dashboards
 
 - Go to **Stack Management > Saved Objects**
-- Click **Import** and select the file: `docs/kibana-dashboards-export.ndjson`
-- When prompted, choose to overwrite any existing objects if you want to update dashboards.
-- After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", and "E-commerce Category Analytics" available in the Dashboard section.
+- Click **Import** (top right) and select the file: `docs/kibana-dashboards-export.ndjson`
+- If prompted, choose to overwrite any existing objects to update dashboards.
+- After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", and "E-commerce Category Analytics" in the Dashboard section.
 
-### 3. Create the Data View
+### 3. Create the Index Pattern
 
-- Go to **Stack Management > Data Views**
-- Click **Create data view**
+- Go to **Stack Management > Index Patterns**
+- Click **Create index pattern**
 - Enter the following:
-  - Name: `user_events`
   - Index pattern: `user_events*`
-  - Timestamp field: `timestamp`
-- Click **Save data view**
+- Click **Next step**
+- Select the **timestamp** field as the time filter field.
+- Click **Create index pattern**
 
 ### 4. Open and Use the Dashboards
 
@@ -43,7 +43,7 @@ Follow these steps in order to set up your analytics dashboards in Kibana:
 ### 5. Troubleshooting
 
 - If you don't see any data:
-  - Check that the data view is set up correctly and selected in the dashboard.
+  - Check that the index pattern is set up correctly and selected in the dashboard.
   - Verify that your application is sending data to Elasticsearch.
   - Make sure the time range includes recent data.
   - Ensure field names in the visualizations match your data.
@@ -54,8 +54,11 @@ Follow these steps in order to set up your analytics dashboards in Kibana:
 - Set up alerts or create custom visualizations as needed.
 - See the rest of this document for manual dashboard creation and advanced tips.
 
+---
 
-## Creating Dashboards
+## Manual Dashboard Creation (Optional)
+
+If you want to create dashboards manually or customize them, follow the steps below.
 
 ### 1. Event Overview Dashboard
 
@@ -158,6 +161,8 @@ This dashboard focuses on category-specific analytics.
 - Sort: Metric: Conversion Rate (descending)
 - Size: 10
 
+---
+
 ## Setting Up Real-Time Dashboards
 
 For real-time monitoring, you can configure your dashboards to auto-refresh:
@@ -165,6 +170,8 @@ For real-time monitoring, you can configure your dashboards to auto-refresh:
 1. In the dashboard view, click on the time picker in the top-right corner
 2. Set the time range to "Last 15 minutes" or another appropriate range
 3. Click on "Refresh" and select an auto-refresh interval (e.g., 10 seconds)
+
+---
 
 ## Exporting and Importing Dashboards
 
@@ -175,6 +182,8 @@ You can export your dashboards to share with others or import them into another 
 3. Click "Export" and save the .ndjson file
 4. To import, click "Import" and select the .ndjson file
 
+---
+
 ## Troubleshooting
 
 If you don't see any data in your visualizations:
@@ -183,6 +192,8 @@ If you don't see any data in your visualizations:
 2. Verify that data is being sent to Elasticsearch
 3. Check the time range in the dashboard
 4. Ensure that the field names in the visualizations match the field names in your data
+
+---
 
 ## Next Steps
 
