@@ -8,25 +8,52 @@ This document provides instructions for setting up Kibana dashboards to visualiz
 - The e-commerce backend application is running and sending data to Elasticsearch
 - Access to the Kibana web interface
 
-## Quick Setup: Import Pre-Built Dashboards
+## Step-by-Step: Quick Setup Using Pre-Built Dashboards
 
-To save time, you can import the pre-built dashboards and visualizations provided in this project:
+Follow these steps in order to set up your analytics dashboards in Kibana:
 
-1. Open Kibana in your web browser (default: http://localhost:5601)
-2. Go to **Stack Management > Saved Objects**
-3. Click **Import** and select the file: `docs/kibana-dashboards-export.ndjson`
-4. When prompted, choose to overwrite any existing objects if you want to update dashboards.
-5. After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", and "E-commerce Category Analytics" available in the Dashboard section.
+### 1. Open Kibana
 
-## Connecting Kibana to Elasticsearch
+- Open Kibana in your web browser (default: http://localhost:5601)
 
-1. Open Kibana in your web browser (default: http://localhost:5601)
-2. Navigate to Stack Management > Data Views
-3. Create a new data view:
-   - Name: `user_events`
-   - Index pattern: `user_events*`
-   - Timestamp field: `timestamp`
-4. Click "Save data view"
+### 2. Import Pre-Built Dashboards
+
+- Go to **Stack Management > Saved Objects**
+- Click **Import** and select the file: `docs/kibana-dashboards-export.ndjson`
+- When prompted, choose to overwrite any existing objects if you want to update dashboards.
+- After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", and "E-commerce Category Analytics" available in the Dashboard section.
+
+### 3. Create the Data View
+
+- Go to **Stack Management > Data Views**
+- Click **Create data view**
+- Enter the following:
+  - Name: `user_events`
+  - Index pattern: `user_events*`
+  - Timestamp field: `timestamp`
+- Click **Save data view**
+
+### 4. Open and Use the Dashboards
+
+- Go to **Dashboard** in Kibana's sidebar.
+- Open one of the imported dashboards (e.g., "E-commerce Event Overview").
+- Set the time range in the top-right (e.g., "Last 15 minutes").
+- Click the refresh icon and set an auto-refresh interval (e.g., 10 seconds) for real-time analytics.
+
+### 5. Troubleshooting
+
+- If you don't see any data:
+  - Check that the data view is set up correctly and selected in the dashboard.
+  - Verify that your application is sending data to Elasticsearch.
+  - Make sure the time range includes recent data.
+  - Ensure field names in the visualizations match your data.
+
+### 6. Next Steps
+
+- Explore the dashboards and visualizations.
+- Set up alerts or create custom visualizations as needed.
+- See the rest of this document for manual dashboard creation and advanced tips.
+
 
 ## Creating Dashboards
 
