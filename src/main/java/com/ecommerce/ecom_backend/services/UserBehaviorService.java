@@ -6,7 +6,8 @@
  * Logging: Essential for debugging and monitoring
  */
 package com.ecommerce.ecom_backend.services;
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,7 +63,7 @@ public class UserBehaviorService {
         event.setProductId(productId);
         event.setCategory(category);
         event.setMetadata(metadata);
-        event.setTimestamp(LocalDateTime.now());
+        event.setTimestamp(Instant.now());
         
         // Extract request info
         if (request != null) {
@@ -103,7 +104,7 @@ public class UserBehaviorService {
      * Get recent events for a user
      */
     public List<UserEvent> getRecentUserEvents(String userId, int hoursBack) {
-        LocalDateTime since = LocalDateTime.now().minusHours(hoursBack);
+        Instant since = Instant.now().minus(Duration.ofHours(hoursBack));
         logger.info("Fetching recent events for user: {} since: {}", userId, since);
         return userEventRepository.findRecentUserEvents(userId, since);
     }

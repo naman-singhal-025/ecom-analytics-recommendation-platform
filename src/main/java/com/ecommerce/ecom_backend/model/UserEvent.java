@@ -1,13 +1,13 @@
 package com.ecommerce.ecom_backend.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 
 /**
  * Represents a user behavior event in our e-commerce system.
@@ -22,24 +22,38 @@ public class UserEvent {
     @Id
     private String id;
     
-    @Field(type = FieldType.Keyword)
+    @MultiField(
+        mainField = @Field(type = FieldType.Text),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String userId;
 
-    @Field(type = FieldType.Keyword)
+    @MultiField(
+        mainField = @Field(type = FieldType.Text),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String sessionId;
 
-    @Field(type = FieldType.Keyword)
+    @MultiField(
+        mainField = @Field(type = FieldType.Text),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String eventType;  // VIEW, CLICK, ADD_TO_CART, PURCHASE, etc.
 
-    @Field(type = FieldType.Keyword)
+    @MultiField(
+        mainField = @Field(type = FieldType.Text),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String productId;
 
-    @Field(type = FieldType.Keyword)
+    @MultiField(
+        mainField = @Field(type = FieldType.Text),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String category;
     
-    @Field(type = FieldType.Date, format = {}, pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime timestamp;
+    @Field(type = FieldType.Date)
+    private Instant timestamp;
     
     // Additional data that might vary by event type
     @Field(type = FieldType.Object)
@@ -55,7 +69,7 @@ public class UserEvent {
     
     // Constructors
     public UserEvent() {
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = Instant.now();
     }
     
     public UserEvent(String userId, String sessionId, String eventType, 
@@ -117,11 +131,11 @@ public class UserEvent {
         this.category = category;
     }
     
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
     
-    public void setTimestamp(LocalDateTime timestamp) {
+    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
     

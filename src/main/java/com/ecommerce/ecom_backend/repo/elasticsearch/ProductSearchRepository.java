@@ -1,5 +1,6 @@
 package com.ecommerce.ecom_backend.repo.elasticsearch;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.elasticsearch.annotations.Query;
@@ -94,4 +95,32 @@ public interface ProductSearchRepository extends ElasticsearchRepository<Product
      * @return list of products matching the criteria
      */
     List<ProductDocument> findByCategoryAndPriceBetween(String category, double minPrice, double maxPrice);
+
+    /**
+     * Find top products by total revenue.
+     * Uses a custom aggregation query for Kibana visualization.
+     */
+    @Query("{\"size\":0,\"aggs\":{\"top_revenue\":{\"terms\":{\"field\":\"id\",\"size\":?0,\"order\":{\"total_revenue\":\"desc\"}},\"aggs\":{\"total_revenue\":{\"sum\":{\"field\":\"totalRevenue\"}}}}}}")
+    String findTopProductsByRevenue(int limit);
+
+    /**
+     * Find top products by conversion rate.
+     * Uses a custom aggregation query for Kibana visualization.
+     */
+    @Query("{\"size\":0,\"aggs\":{\"top_conversion\":{\"terms\":{\"field\":\"id\",\"size\":?0,\"order\":{\"conversion_rate\":\"desc\"}},\"aggs\":{\"conversion_rate\":{\"avg\":{\"field\":\"conversionRate\"}}}}}}")
+    String findTopProductsByConversionRate(int limit);
+
+    /**
+     * Find products by view count ranges.
+     * Uses a custom aggregation query for Kibana visualization.
+     */
+    @Query("{\"size\":0,\"aggs\":{\"view_ranges\":{\"range\":{\"field\":\"totalViews\",\"ranges\":[{\"to\":100},{\"from\":100,\"to\":1000},{\"from\":1000,\"to\":10000},{\"from\":10000}]}}}}")
+    String findProductsByViewRanges();
+
+    /**
+     * Find purchase trends over time.
+     * Uses a custom aggregation query for Kibana visualization.
+     */
+    @Query("{\"size\":0,\"aggs\":{\"purchase_over_time\":{\"date_histogram\":{\"field\":\"lastPurchaseDate\",\"calendar_interval\":\"1d\"},\"aggs\":{\"total_purchases\":{\"sum\":{\"field\":\"totalPurchases\"}}}}}}")
+    String findPurchaseTrends(LocalDateTime startDate, LocalDateTime endDate);
 }

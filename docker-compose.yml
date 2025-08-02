@@ -4,6 +4,7 @@ services:
   # Zookeeper is required by Kafka for coordination
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
+    restart: unless-stopped
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -15,6 +16,7 @@ services:
   # Kafka message broker
   kafka:
     image: confluentinc/cp-kafka:7.4.0
+    restart: unless-stopped
     hostname: kafka
     container_name: kafka
     depends_on:
@@ -33,6 +35,7 @@ services:
   # MongoDB database
   mongodb:
     image: mongo:7.0
+    restart: unless-stopped
     hostname: mongodb
     container_name: mongodb
     ports:
@@ -45,7 +48,8 @@ services:
 
   # MongoDB UI for easy database viewing
   mongo-express:
-    image: mongo-express:1.0.0
+    image: mongo-express:latest
+    restart: unless-stopped
     hostname: mongo-express
     container_name: mongo-express
     depends_on:
@@ -53,6 +57,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: password
       ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
@@ -62,6 +67,7 @@ services:
   # Elasticsearch for search and analytics
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    restart: unless-stopped
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -76,6 +82,7 @@ services:
   # Kibana for visualizing Elasticsearch data
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.15
+    restart: unless-stopped
     container_name: kibana
     depends_on:
       - elasticsearch
@@ -87,6 +94,7 @@ services:
   # Redis for caching
   redis:
     image: redis:7.4-alpine
+    restart: unless-stopped
     container_name: redis
     ports:
       - "6379:6379"
@@ -96,6 +104,7 @@ services:
    # PostgreSQL for transactional data
   postgres:
     image: postgres:16.4-alpine
+    restart: unless-stopped
     container_name: postgres
     environment:
       POSTGRES_DB: ecommerce
@@ -106,8 +115,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Logstash for data processing
+  logstash:
+    build:
+      context: ./logstash
+    restart: unless-stopped
+    container_name: logstash
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5044:5044"
+    volumes:
+      - logstash_data:/usr/share/logstash/data
+
 volumes:
   mongodb_data:
   elasticsearch_data:
   redis_data:
   postgres_data:
+  logstash_data:

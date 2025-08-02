@@ -17,7 +17,7 @@ import com.ecommerce.ecom_backend.repo.elasticsearch.UserEventSearchRepository;
 import com.ecommerce.ecom_backend.util.ElasticsearchAggregationParser;
 
 /**
- * Service for providing analytics data from Elasticsearch.
+ * Service for providing user event analytics data from Elasticsearch.
  */
 @Service
 public class AnalyticsService {
@@ -166,7 +166,7 @@ public class AnalyticsService {
                 .map(pa -> {
                     try {
                         Long productId = Long.valueOf(pa.getProductId());
-                        return productService.getProductById(productId).orElse(null);
+                        return productService.getProductById(productId);
                     } catch (NumberFormatException e) {
                         logger.error("Invalid product ID: {}", pa.getProductId());
                         return null;
@@ -189,7 +189,7 @@ public class AnalyticsService {
                 .map(pa -> {
                     try {
                         Long productId = Long.valueOf(pa.getProductId());
-                        return productService.getProductById(productId).orElse(null);
+                        return productService.getProductById(productId);
                     } catch (NumberFormatException e) {
                         logger.error("Invalid product ID: {}", pa.getProductId());
                         return null;

@@ -21,14 +21,32 @@ Follow these steps to set up your analytics dashboards in Kibana 7.17.x:
 - Go to **Stack Management > Saved Objects**
 - Click **Import** (top right) and select the file: `docs/kibana-dashboards-export.ndjson`
 - If prompted, choose to overwrite any existing objects to update dashboards.
-- After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", and "E-commerce Category Analytics" in the Dashboard section.
+- After import, you will see dashboards such as "E-commerce Event Overview", "E-commerce Product Analytics", "E-commerce Category Analytics", and "Product Performance Analytics" in the Dashboard section.
 
 ### 3. Create the Index Pattern
 
 - Go to **Stack Management > Index Patterns**
 - Click **Create index pattern**
 - Enter the following:
-  - Index pattern: `user_events*`
+  - Index patterns:
+    - `user_events*` (for user event analytics)
+    - `products` (for product performance analytics)
+
+### 3.1 Initialize Product Data in Elasticsearch
+
+Before creating the products index pattern:
+
+1. Call the following endpoint to index all products:
+   ```
+   POST /api/product-search/index-all
+   ```
+   This will create the "products" index and populate it with all products from PostgreSQL.
+
+   Note: You can call this endpoint again anytime to reindex all products with their latest analytics data.
+
+2. Verify the index exists in Kibana:
+   - Go to **Stack Management > Index Management**
+   - You should see the "products" index listed
 - Click **Next step**
 - Select the **timestamp** field as the time filter field.
 - Click **Create index pattern**
@@ -162,6 +180,45 @@ This dashboard focuses on category-specific analytics.
 - Size: 10
 
 ---
+
+## Product Performance Analytics Dashboard
+
+This dashboard provides advanced product analytics using data from PostgreSQL synchronized to Elasticsearch.
+
+1. Navigate to Dashboard > Product Performance Analytics
+2. The dashboard includes the following visualizations:
+
+#### Product Revenue Ranking
+- Shows top products by total revenue
+- Visualization type: Horizontal bar chart
+- Metrics: Sum of totalRevenue
+- Bucket: Split bars > Terms > Field: id
+- Size: 10
+
+#### Product Conversion Analytics
+- Detailed view of product conversion metrics
+- Visualization type: Data table
+- Metrics:
+  - Average conversion rate
+  - Sum of total views
+  - Sum of total purchases
+- Bucket: Split rows > Terms > Field: id
+- Size: 10
+
+#### Product View Distribution
+- Distribution of products by view count ranges
+- Visualization type: Histogram
+- Metrics: Count of documents
+- Bucket: Range > Field: totalViews
+  - Ranges: 0-100, 100-1000, 1000-10000, 10000+
+
+#### Product Purchase Trends
+- Time-based analysis of product purchases
+- Visualization type: Line chart
+- Metrics: Sum of totalPurchases
+- Bucket: X-axis > Date Histogram > Field: lastPurchaseDate
+- Bucket: Split series > Terms > Field: id
+- Size: 5
 
 ## Setting Up Real-Time Dashboards
 

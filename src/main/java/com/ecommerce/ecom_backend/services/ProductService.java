@@ -1,6 +1,6 @@
 package com.ecommerce.ecom_backend.services;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,14 +54,21 @@ public class ProductService {
     
     /**
      * Get a product by ID.
-     * 
+     *
+     * This method returns an Optional<Product> but caches only the unwrapped Product instance.
+     * Rationale:
+     * - Caching Optional<Product> directly can cause deserialization issues in Redis (e.g., LinkedHashMap cannot be cast to Optional)
+     * - We cache only the actual Product instance to avoid these issues
+     * - This avoids type mismatch issues and keeps service methods clean
+     *
      * @param id the product ID
-     * @return the product, if found
+     * @return an product if found, otherwise null
      */
-    @Cacheable(value = "productById", key = "#id")
-    public Optional<Product> getProductById(Long id) {
+    @Cacheable(value = "productById", key = "#id", unless = "#result == null")
+    public Product getProductById(Long id) {
         logger.info("Fetching product with ID: {}", id);
-        return productRepository.findById(id);
+        // We cache only the unwrapped Product (not Optional) to avoid issues with Redis serialization.
+        return productRepository.findById(id).orElse(null); // unwrap Optional for caching
     }
     
     /**
@@ -81,11 +88,11 @@ public class ProductService {
         
         // Set default values if not provided
         if (product.getCreatedAt() == null) {
-            product.setCreatedAt(LocalDateTime.now());
+            product.setCreatedAt(Instant.now());
         }
         
         if (product.getUpdatedAt() == null) {
-            product.setUpdatedAt(LocalDateTime.now());
+            product.setUpdatedAt(Instant.now());
         }
         
         Product savedProduct = productRepository.save(product);
@@ -111,11 +118,11 @@ public class ProductService {
             @CacheEvict(value = "products", allEntries = true),
             // evicts list of products in the category of the updated product. {c1 -> l1, c2 -> l2, ...} . So, list from one category is evicted.
             // here condition check happen before key generation, so if the product is not found, it will not try to evict the cache.
-            @CacheEvict(value = "categoryProducts", key = "#result.isPresent() ? #result.get().getCategory() : ''", condition = "#result.isPresent()"),
+            @CacheEvict(value = "categoryProducts", key = "#result != null ? #result.getCategory() : ''", condition = "#result != null"),
             @CacheEvict(value = "popularProducts", allEntries = true)
         },
         put = {
-            @CachePut(value = "productById", key = "#id", condition = "#result.isPresent()")
+            @CachePut(value = "productById", key = "#id", condition = "#result != null")
         }
     )
     public Optional<Product> updateProduct(Long id, Product productDetails) {
@@ -131,24 +138,24 @@ public class ProductService {
             cacheManager.getCache("categoryProducts").evict(oldCategory);
         }
 
-        return getProductById(id)
-                .map(existingProduct -> {
-                    existingProduct.setName(productDetails.getName());
-                    existingProduct.setDescription(productDetails.getDescription());
-                    existingProduct.setPrice(productDetails.getPrice());
-                    existingProduct.setCategory(productDetails.getCategory());
-                    existingProduct.setStockQuantity(productDetails.getStockQuantity());
-                    existingProduct.setImageUrl(productDetails.getImageUrl());
-                    existingProduct.setUpdatedAt(LocalDateTime.now());
+        Product existingProduct = getProductById(id);
+        if (existingProduct == null) return Optional.empty();
 
-                    Product savedProduct = productRepository.save(existingProduct);
-                    /*
-                     * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange} 
-                     * after the transaction commits.
-                     */
-                    applicationEventPublisher.publishEvent(savedProduct);
-                    return savedProduct;
-                });
+        existingProduct.setName(productDetails.getName());
+        existingProduct.setDescription(productDetails.getDescription());
+        existingProduct.setPrice(productDetails.getPrice());
+        existingProduct.setCategory(productDetails.getCategory());
+        existingProduct.setStockQuantity(productDetails.getStockQuantity());
+        existingProduct.setImageUrl(productDetails.getImageUrl());
+        existingProduct.setUpdatedAt(Instant.now());
+
+        Product savedProduct = productRepository.save(existingProduct);
+        /*
+         * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange} 
+         * after the transaction commits.
+         */
+        applicationEventPublisher.publishEvent(savedProduct);
+        return Optional.of(savedProduct);
     }
     
     /**
@@ -168,17 +175,15 @@ public class ProductService {
     public boolean deleteProduct(Long id) {
         logger.info("Deleting product with ID: {}", id);
         
-        return getProductById(id)
-                .map(product -> {
-                    productRepository.delete(product);
-                    /**
-                     * Publish the product deletion event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
-                     * after the transaction commits.
-                     */
-                    applicationEventPublisher.publishEvent(product);
-                    return true;
-                })
-                .orElse(false);
+        Product product = getProductById(id);
+        if (product == null) return false;
+        productRepository.delete(product);
+        /**
+         * Publish the product deletion event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+         * after the transaction commits.
+         */
+        applicationEventPublisher.publishEvent(product);
+        return true;
     }
     
     /**
@@ -195,7 +200,7 @@ public class ProductService {
             @CacheEvict(value = "popularProducts", allEntries = true)
         },
         put = {
-            @CachePut(value = "productById", key = "#id", condition = "#result.isPresent()")
+            @CachePut(value = "productById", key = "#id", condition = "#result != null")
         }
     )
     public Optional<Product> updateStock(Long id, Integer quantity) {
@@ -205,18 +210,18 @@ public class ProductService {
             throw new IllegalArgumentException("Stock quantity cannot be negative");
         }
         
-        return getProductById(id)
-                .map(product -> {
-                    product.setStockQuantity(quantity);
-                    product.setUpdatedAt(LocalDateTime.now());
-                    Product savedProduct = productRepository.save(product);
-                    /**
-                     * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
-                     * after the transaction commits.
-                     */
-                    applicationEventPublisher.publishEvent(savedProduct);
-                    return savedProduct;
-                });
+        Product product = getProductById(id);
+        if (product == null) return Optional.empty();
+
+        product.setStockQuantity(quantity);
+        product.setUpdatedAt(Instant.now());
+        Product savedProduct = productRepository.save(product);
+        /**
+         * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+         * after the transaction commits.
+         */
+        applicationEventPublisher.publishEvent(savedProduct);
+        return Optional.of(savedProduct);
     }
     
     /**
@@ -233,30 +238,30 @@ public class ProductService {
             @CacheEvict(value = "popularProducts", allEntries = true)
         },
         put = {
-            @CachePut(value = "productById", key = "#id", condition = "#result.isPresent()")
+            @CachePut(value = "productById", key = "#id", condition = "#result != null")
         }
     )
     public Optional<Product> adjustStock(Long id, Integer adjustment) {
         logger.info("Adjusting stock for product ID: {} by {}", id, adjustment);
         
-        return getProductById(id)
-                .map(product -> {
-                    int newStock = product.getStockQuantity() + adjustment;
-                    
-                    if (newStock < 0) {
-                        throw new IllegalArgumentException("Cannot reduce stock below zero");
-                    }
-                    
-                    product.setStockQuantity(newStock);
-                    product.setUpdatedAt(LocalDateTime.now());
-                    Product savedProduct = productRepository.save(product);
-                    /**
-                     * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
-                     * after the transaction commits.
-                     */
-                    applicationEventPublisher.publishEvent(savedProduct);
-                    return savedProduct;
-                });
+        Product product = getProductById(id);
+        if (product == null) return Optional.empty();
+
+        int newStock = product.getStockQuantity() + adjustment;
+        
+        if (newStock < 0) {
+            throw new IllegalArgumentException("Cannot reduce stock below zero");
+        }
+        
+        product.setStockQuantity(newStock);
+        product.setUpdatedAt(Instant.now());
+        Product savedProduct = productRepository.save(product);
+        /**
+         * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
+         * after the transaction commits.
+         */
+        applicationEventPublisher.publishEvent(savedProduct);
+        return Optional.of(savedProduct);
     }
     
     /**
@@ -269,9 +274,8 @@ public class ProductService {
     public boolean isInStock(Long id, Integer requiredQuantity) {
         logger.info("Checking stock for product ID: {} (required: {})", id, requiredQuantity);
         
-        return getProductById(id) // Use cached method
-                .map(product -> product.getStockQuantity() >= requiredQuantity)
-                .orElse(false);
+        Product product = getProductById(id);
+        return product != null && product.getStockQuantity() >= requiredQuantity;
     }
     
     /**

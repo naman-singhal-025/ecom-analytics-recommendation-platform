@@ -1,14 +1,14 @@
 package com.ecommerce.ecom_backend.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 
 /**
  * Elasticsearch document representation of a Product.
@@ -20,19 +20,44 @@ public class ProductDocument {
     @Id
     private String id;
     
-    @Field(type = FieldType.Text, analyzer = "standard")
+    // Analytics fields
+    @Field(type = FieldType.Long)
+    private Long totalViews = 0L;
+    
+    @Field(type = FieldType.Long)
+    private Long totalPurchases = 0L;
+    
+    @Field(type = FieldType.Double)
+    private BigDecimal totalRevenue = BigDecimal.ZERO;
+    
+    @Field(type = FieldType.Double)
+    private Double conversionRate = 0.0;
+    
+    @Field(type = FieldType.Keyword)
+    private String lastPurchaseDate;
+    
+    @MultiField(
+        mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String name;
     
     // Description field is indexed as text for full-text search capabilities
     // analyzer is set to "standard" for basic text analysis.
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @MultiField(
+        mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String description;
     
     @Field(type = FieldType.Double)
     private BigDecimal price;
     
     // Category field is indexed as a keyword for exact match searches
-    @Field(type = FieldType.Keyword)
+    @MultiField(
+        mainField = @Field(type = FieldType.Text),
+        otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+    )
     private String category;
     
     @Field(type = FieldType.Integer)
@@ -41,13 +66,11 @@ public class ProductDocument {
     @Field(type = FieldType.Keyword)
     private String imageUrl;
     
-    @Field(type = FieldType.Date, format = {}, pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdAt;
+    @Field(type = FieldType.Date)
+    private Instant createdAt;
     
-    @Field(type = FieldType.Date, format = {}, pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
+    @Field(type = FieldType.Date)
+    private Instant updatedAt;
     
     // Constructors
     public ProductDocument() {
@@ -68,8 +91,15 @@ public class ProductDocument {
         document.setCategory(product.getCategory());
         document.setStockQuantity(product.getStockQuantity());
         document.setImageUrl(product.getImageUrl());
-        document.setCreatedAt(product.getCreatedAt());
-        document.setUpdatedAt(product.getUpdatedAt());
+        
+        // Assign Instant values directly
+        if (product.getCreatedAt() != null) {
+            document.setCreatedAt(product.getCreatedAt());
+        }
+        if (product.getUpdatedAt() != null) {
+            document.setUpdatedAt(product.getUpdatedAt());
+        }
+        
         return document;
     }
     
@@ -130,20 +160,61 @@ public class ProductDocument {
         this.imageUrl = imageUrl;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Analytics getters and setters
+    public Long getTotalViews() {
+        return totalViews;
+    }
+
+    public void setTotalViews(Long totalViews) {
+        this.totalViews = totalViews;
+    }
+
+    public Long getTotalPurchases() {
+        return totalPurchases;
+    }
+
+    public void setTotalPurchases(Long totalPurchases) {
+        this.totalPurchases = totalPurchases;
+    }
+
+    public BigDecimal getTotalRevenue() {
+        return totalRevenue;
+    }
+
+    public void setTotalRevenue(BigDecimal totalRevenue) {
+        this.totalRevenue = totalRevenue;
+    }
+
+    public Double getConversionRate() {
+        return conversionRate;
+    }
+
+    public void setConversionRate(Double conversionRate) {
+        this.conversionRate = conversionRate;
+    }
+
+    public String getLastPurchaseDate() {
+        return lastPurchaseDate;
+    }
+
+    public void setLastPurchaseDate(String lastPurchaseDate) {
+        this.lastPurchaseDate = lastPurchaseDate;
     }
     
     @Override

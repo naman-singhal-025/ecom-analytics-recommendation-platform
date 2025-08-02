@@ -16,8 +16,12 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import com.ecommerce.ecom_backend.model.Product;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /*
  * @EnableCaching is a marker annotation that enables Spring's "annotation-driven" cache management capability.
@@ -72,13 +76,15 @@ public class CachingConfig {
      * @return the Redis template
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper redisObjectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
+
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.afterPropertiesSet();
         return template;
     }
     
@@ -89,22 +95,27 @@ public class CachingConfig {
      * @return the cache manager
      */
     @Bean
-    public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+    public CacheManager cacheManager(RedisConnectionFactory connectionFactory, ObjectMapper redisObjectMapper) {
         // Default cache configuration
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30)) // Default TTL: 30 minutes
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new Jackson2JsonRedisSerializer<>(redisObjectMapper,Object.class)))
                 .disableCachingNullValues();
         
         // Cache-specific configurations
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
-        
+
+        Jackson2JsonRedisSerializer<Product> productSerializer = new Jackson2JsonRedisSerializer<>(redisObjectMapper,Product.class);
+
+        cacheConfigurations.put("productById", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2))
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(productSerializer))
+                .disableCachingNullValues());
+
         // Products cache: 1 hour TTL
         cacheConfigurations.put("products", defaultConfig.entryTtl(Duration.ofHours(1)));
-        
-        // Product by ID cache: 2 hours TTL
-        cacheConfigurations.put("productById", defaultConfig.entryTtl(Duration.ofHours(2)));
         
         // Category products cache: 3 hours TTL
         cacheConfigurations.put("categoryProducts", defaultConfig.entryTtl(Duration.ofHours(3)));

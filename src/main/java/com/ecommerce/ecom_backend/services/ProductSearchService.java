@@ -1,5 +1,9 @@
 package com.ecommerce.ecom_backend.services;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +25,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.ecommerce.ecom_backend.model.Product;
 import com.ecommerce.ecom_backend.model.ProductDocument;
+import com.ecommerce.ecom_backend.model.UserEvent;
 import com.ecommerce.ecom_backend.repo.elasticsearch.ProductSearchRepository;
+import com.ecommerce.ecom_backend.repo.jpa.ProductRepository;
 
 /**
  * Service for product search operations using Elasticsearch.
@@ -30,12 +36,16 @@ import com.ecommerce.ecom_backend.repo.elasticsearch.ProductSearchRepository;
 public class ProductSearchService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductSearchService.class);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     
     @Autowired
     private ProductService productService;
     
     @Autowired
     private ProductSearchRepository productSearchRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
     
     @Autowired
     private ElasticsearchOperations elasticsearchOperations;
@@ -46,10 +56,25 @@ public class ProductSearchService {
      * @param product the product to index
      * @return the indexed product document
      */
-    public ProductDocument indexProduct(Product product) {
-        logger.info("Indexing product in Elasticsearch: {}", product.getId());
-        ProductDocument document = ProductDocument.fromProduct(product);
-        return productSearchRepository.save(document);
+    public ProductDocument indexProductById(Long id) {
+        logger.info("Indexing product in Elasticsearch: {}", id);
+        Product product = productService.getProductById(id);
+        if (product == null) {
+            logger.warn("Product not found for indexing: {}", id);
+            return null;
+        }
+        
+        ProductDocument existingDoc = productSearchRepository.findById(id.toString())
+            .orElse(new ProductDocument());
+
+        ProductDocument newDoc = ProductDocument.fromProduct(product);
+        newDoc.setTotalViews(existingDoc.getTotalViews());
+        newDoc.setTotalPurchases(existingDoc.getTotalPurchases());
+        newDoc.setTotalRevenue(existingDoc.getTotalRevenue());
+        newDoc.setConversionRate(existingDoc.getConversionRate());
+        newDoc.setLastPurchaseDate(existingDoc.getLastPurchaseDate());
+
+        return productSearchRepository.save(newDoc);
     }
     
     /**
@@ -61,15 +86,21 @@ public class ProductSearchService {
     public long indexAllProducts() {
         logger.info("Indexing all products in Elasticsearch");
 
-        // Fetch all products using ProductService to utilize cached data instead of directly accessing the repository.
-        List<Product> products = productService.getAllProducts();
+        // Fetch directly from repository to avoid cache deserialization issues
+        List<Product> products = productRepository.findAll();
 
-        // Convert each Product entity into a ProductDocument for Elasticsearch indexing.
-        // This uses a method reference to call the static fromProduct(Product) method.
-        // Equivalent to: .map(product -> ProductDocument.fromProduct(product))
-        // It transforms the stream of Product into a stream of ProductDocument.
         List<ProductDocument> documents = products.stream()
-                .map(ProductDocument::fromProduct)
+                    .map(product -> {
+                    ProductDocument existingDoc = productSearchRepository.findById(product.getId().toString())
+                    .orElse(new ProductDocument());
+                    ProductDocument newDoc = ProductDocument.fromProduct(product);
+                    newDoc.setTotalViews(existingDoc.getTotalViews());
+                    newDoc.setTotalPurchases(existingDoc.getTotalPurchases());
+                    newDoc.setTotalRevenue(existingDoc.getTotalRevenue());
+                    newDoc.setConversionRate(existingDoc.getConversionRate());
+                    newDoc.setLastPurchaseDate(existingDoc.getLastPurchaseDate());
+                    return newDoc;
+                })
                 .collect(Collectors.toList());
         
         Iterable<ProductDocument> savedDocuments = productSearchRepository.saveAll(documents);
@@ -102,7 +133,60 @@ public class ProductSearchService {
     @TransactionalEventListener
     public void handleProductChange(Product product) {
         logger.info("Handling product change event for product: {}", product.getId());
-        indexProduct(product);
+        
+        // Get existing document if it exists to preserve analytics data
+        ProductDocument existingDoc = productSearchRepository.findById(product.getId().toString())
+            .orElse(new ProductDocument());
+        
+        // Create new document with updated product data
+        ProductDocument newDoc = ProductDocument.fromProduct(product);
+        
+        // Preserve analytics data
+        newDoc.setTotalViews(existingDoc.getTotalViews());
+        newDoc.setTotalPurchases(existingDoc.getTotalPurchases());
+        newDoc.setTotalRevenue(existingDoc.getTotalRevenue());
+        newDoc.setConversionRate(existingDoc.getConversionRate());
+        newDoc.setLastPurchaseDate(existingDoc.getLastPurchaseDate());
+        
+        productSearchRepository.save(newDoc);
+    }
+
+    /**
+     * Update analytics data for a product.
+     *
+     * @param productId the product ID
+     * @param views number of new views
+     * @param purchases number of new purchases
+     */
+    public void updateProductAnalytics(String productId, long views, long purchases) {
+        logger.info("Updating analytics for product: {}", productId);
+        
+        productSearchRepository.findById(productId).ifPresent(doc -> {
+            // Update analytics fields
+            doc.setTotalViews(doc.getTotalViews() + views);
+            doc.setTotalPurchases(doc.getTotalPurchases() + purchases);
+            doc.setUpdatedAt(Instant.now());
+            
+            BigDecimal price = doc.getPrice();
+            if (price != null) {
+                BigDecimal additionalRevenue = price.multiply(BigDecimal.valueOf(purchases));
+                doc.setTotalRevenue(doc.getTotalRevenue().add(additionalRevenue));
+            }
+            
+            // Update conversion rate
+            if (doc.getTotalViews() > 0) {
+                double convRate = (double) doc.getTotalPurchases() / doc.getTotalViews();
+                doc.setConversionRate(convRate);
+            }
+            
+            // Update last purchase date if there were purchases
+            if (purchases > 0) {
+                doc.setLastPurchaseDate(DATE_FORMATTER.format(LocalDateTime.now()));
+            }
+            
+            productSearchRepository.save(doc);
+            logger.info("Updated analytics for product: {} : {}", productId, doc);
+        });
     }
     
     /**
@@ -211,6 +295,38 @@ public class ProductSearchService {
                 .limit(maxSuggestions)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Get top products by revenue for Kibana visualization.
+     */
+    public String getTopProductsByRevenue(int limit) {
+        logger.info("Getting top {} products by revenue", limit);
+        return productSearchRepository.findTopProductsByRevenue(limit);
+    }
+
+    /**
+     * Get top products by conversion rate for Kibana visualization.
+     */
+    public String getTopProductsByConversionRate(int limit) {
+        logger.info("Getting top {} products by conversion rate", limit);
+        return productSearchRepository.findTopProductsByConversionRate(limit);
+    }
+
+    /**
+     * Get product distribution by view count ranges for Kibana visualization.
+     */
+    public String getProductsByViewRanges() {
+        logger.info("Getting products by view count ranges");
+        return productSearchRepository.findProductsByViewRanges();
+    }
+
+    /**
+     * Get purchase trends over time for Kibana visualization.
+     */
+    public String getPurchaseTrends(LocalDateTime startDate, LocalDateTime endDate) {
+        logger.info("Getting purchase trends from {} to {}", startDate, endDate);
+        return productSearchRepository.findPurchaseTrends(startDate, endDate);
+    }
     
     /**
      * Convert ProductDocument objects to Product entities.
@@ -224,12 +340,35 @@ public class ProductSearchService {
         for (ProductDocument document : documents) {
             try {
                 Long productId = Long.valueOf(document.getId());
-                productService.getProductById(productId).ifPresent(products::add);
+                Product product = productService.getProductById(productId);
+                if (product != null) {
+                    products.add(product);
+                }
             } catch (NumberFormatException e) {
                 logger.error("Invalid product ID in Elasticsearch: {}", document.getId());
             }
         }
         
         return products;
+    }
+
+    /**
+     * Update product analytics based on a UserEvent.
+     * Increments views for "VIEW" events, and increments purchases and revenue for "PURCHASE" events.
+     *
+     * @param event the user event containing productId, eventType, and price
+     */
+    public void updateProductAnalytics(UserEvent event) {
+        String productId = event.getProductId();
+        long views = 0;
+        long purchases = 0;
+
+        if ("VIEW".equalsIgnoreCase(event.getEventType())) {
+            views = 1;
+        } else if ("PURCHASE".equalsIgnoreCase(event.getEventType())) {
+            purchases = 1;
+        }
+
+        updateProductAnalytics(productId, views, purchases);
     }
 }

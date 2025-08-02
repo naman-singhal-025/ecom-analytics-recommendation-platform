@@ -1,6 +1,6 @@
 package com.ecommerce.ecom_backend.services;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +78,7 @@ public class InventoryService {
                 
                 if (product.getStockQuantity() >= quantity) {
                     product.setStockQuantity(product.getStockQuantity() - quantity);
-                    product.setUpdatedAt(LocalDateTime.now());
+                    product.setUpdatedAt(Instant.now());
                     productRepository.save(product);
                     results.put(productId, true);
                     logger.info("Reserved {} units of product {}", quantity, productId);
@@ -114,7 +114,7 @@ public class InventoryService {
             if (productOpt.isPresent()) {
                 Product product = productOpt.get();
                 product.setStockQuantity(product.getStockQuantity() + quantity);
-                product.setUpdatedAt(LocalDateTime.now());
+                product.setUpdatedAt(Instant.now());
                 productRepository.save(product);
                 logger.info("Released {} units of product {}", quantity, productId);
             } else {
@@ -205,7 +205,7 @@ public class InventoryService {
             if (productOpt.isPresent()) {
                 Product product = productOpt.get();
                 product.setStockQuantity(newQuantity);
-                product.setUpdatedAt(LocalDateTime.now());
+                product.setUpdatedAt(Instant.now());
                 productRepository.save(product);
                 results.put(productId, true);
                 logger.info("Updated stock for product {} to {}", productId, newQuantity);

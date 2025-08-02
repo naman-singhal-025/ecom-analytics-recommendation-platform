@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ecommerce.ecom_backend.model.Product;
+import com.ecommerce.ecom_backend.model.ProductDocument;
 import com.ecommerce.ecom_backend.services.ProductSearchService;
 
 /**
@@ -24,6 +26,20 @@ public class ProductSearchController {
 
     @Autowired
     private ProductSearchService productSearchService;
+
+    /**
+     * Index single product in Elasticsearch.
+     * 
+     * @return the number of products indexed
+     */
+    @PostMapping("/index/{id}")
+    public ResponseEntity<ProductDocument> indexProductById(@PathVariable Long id) {
+        ProductDocument indexedProduct = productSearchService.indexProductById(id);
+        if (indexedProduct == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(indexedProduct);
+    }
     
     /**
      * Index all products in Elasticsearch.

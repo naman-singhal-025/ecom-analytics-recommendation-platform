@@ -1,6 +1,6 @@
 package com.ecommerce.ecom_backend.repo.mongo;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -39,7 +39,7 @@ public interface UserEventRepository extends MongoRepository<UserEvent, String> 
     /**
      * Find events in a date range
      */
-    List<UserEvent> findByTimestampBetween(LocalDateTime start, LocalDateTime end);
+    List<UserEvent> findByTimestampBetween(Instant start, Instant end);
     
     /**
      * Find user events by type and product (useful for analytics)
@@ -53,7 +53,7 @@ public interface UserEventRepository extends MongoRepository<UserEvent, String> 
      * gte -> greater than or equal to
      */
     @Query("{'userId': ?0, 'timestamp': {'$gte': ?1}}")
-    List<UserEvent> findRecentUserEvents(String userId, LocalDateTime since);
+    List<UserEvent> findRecentUserEvents(String userId, Instant since);
     
     /**
      * Count events by type
