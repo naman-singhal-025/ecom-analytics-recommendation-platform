@@ -5,10 +5,10 @@ A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boo
 ## 📊 Sample Dashboards
 
 <p align="center">
-  <img src="docs/images/event-overview-dashboard.png" alt="Event Overview Dashboard" width="700"/>
+  <img src="docs/images/event-overview-dashboard.png" alt="Event Overview Dashboard" style="width:95%; margin: 0 auto; display: block;"/>
 </p>
 <p align="center">
-  <img src="docs/images/product-insights-dashboard.png" alt="Product Insights Dashboard" width="700"/>
+  <img src="docs/images/product-insights-dashboard.png" alt="Product Insights Dashboard" style="width:95%; margin: 0 auto; display: block;"/>
 </p>
 
 ## Features
@@ -17,6 +17,7 @@ A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boo
 - **Product Management**: Manage products with inventory tracking
 - **Elasticsearch Integration**: Fast and powerful product search capabilities
 - **Redis Caching**: Improved performance with strategic caching
+- **PostgreSQL Integration**: Stores transactional data like orders, inventory, and user checkout details
 - **Real-time Analytics**: Process user events in real-time using Kafka
 - **Kibana Dashboards**: Visualize analytics data with pre-configured Kibana dashboards
 - **Logstash Integration**: Sync data to Elastic Cloud reliably using Logstash
@@ -32,6 +33,7 @@ The application follows a dual-write architecture:
 - Kafka is used for asynchronous processing of user events
 - Logstash is used for ingesting data into Elastic Cloud for centralized analytics
 - Dual sync strategy: local Elasticsearch enables fast local testing and development, while Elastic Cloud provides centralized, scalable analytics
+- PostgreSQL is used to store relational and transactional data such as orders, inventory levels, and historical product pricing
 
 ## Getting Started
 
@@ -45,6 +47,7 @@ The application follows a dual-write architecture:
 - Kafka
 - Kibana (for analytics dashboards)
 - Logstash (for syncing data to Elastic Cloud)
+- PostgreSQL
 
 ### Running the Application
 
@@ -113,6 +116,7 @@ To set up the dashboards:
 We use a dual-write architecture to get the best of both worlds:
 - MongoDB for reliable persistence and complex data relationships
 - Elasticsearch for fast search and powerful analytics
+- PostgreSQL handles the structured relational data layer for transactions and inventory, and MongoDB complements it with document-based storage for flexibility in product and session data.
 
 ### Event-Driven Processing
 
