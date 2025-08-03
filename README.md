@@ -1,6 +1,6 @@
 # E-commerce Backend
 
-A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boot, MongoDB, Elasticsearch, Redis, and Kafka.
+A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boot, MongoDB, Elasticsearch (local and Elastic Cloud), Redis, Kafka, and Logstash for comprehensive analytics and seamless data synchronization.
 
 ## Features
 
@@ -10,6 +10,9 @@ A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boo
 - **Redis Caching**: Improved performance with strategic caching
 - **Real-time Analytics**: Process user events in real-time using Kafka
 - **Kibana Dashboards**: Visualize analytics data with pre-configured Kibana dashboards
+- **Logstash Integration**: Sync data to Elastic Cloud reliably using Logstash
+- **Real-time Sync**: Keep local and cloud Elasticsearch indices synchronized in real-time
+- **Index Template Setup and Runtime Fields**: Advanced Elasticsearch configurations for optimized analytics
 
 ## Architecture
 
@@ -18,6 +21,8 @@ The application follows a dual-write architecture:
 - Data is indexed in Elasticsearch for search and analytics
 - Redis is used for caching frequently accessed data
 - Kafka is used for asynchronous processing of user events
+- Logstash is used for ingesting data into Elastic Cloud for centralized analytics
+- Dual sync strategy: local Elasticsearch enables fast local testing and development, while Elastic Cloud provides centralized, scalable analytics
 
 ## Getting Started
 
@@ -26,17 +31,19 @@ The application follows a dual-write architecture:
 - Java 11+
 - Maven
 - MongoDB
-- Elasticsearch 7.x
+- Elasticsearch 7.x (local)
 - Redis
 - Kafka
 - Kibana (for analytics dashboards)
+- Logstash (for syncing data to Elastic Cloud)
 
 ### Running the Application
 
-1. Clone the repository
-2. Configure application properties in `src/main/resources/application.properties`
-3. Build the application: `mvn clean install`
-4. Run the application: `mvn spring-boot:run`
+1. Clone the repository  
+2. Configure application properties in `src/main/resources/application.properties`, including endpoints for both local and/or Elastic Cloud Elasticsearch instances  
+3. Configure Logstash to point to the appropriate Elasticsearch endpoints (local and/or cloud)  
+4. Build the application: `mvn clean install`  
+5. Run the application: `mvn spring-boot:run`
 
 ## API Endpoints
 
@@ -78,16 +85,17 @@ The application follows a dual-write architecture:
 
 ## Analytics with Kibana
 
-This project includes pre-configured Kibana dashboards for visualizing analytics data. To set up the dashboards:
+This project includes pre-configured Kibana dashboards for visualizing analytics data. It supports both local Elasticsearch/Kibana setups as well as Elastic Cloud environments.
 
-1. Ensure Elasticsearch and Kibana are running
-2. Follow the instructions in [docs/KibanaDashboardSetup.md](docs/KibanaDashboardSetup.md)
-3. Import the pre-configured dashboards using the [docs/kibana-dashboards-export.ndjson](docs/kibana-dashboards-export.ndjson) file
+To set up the dashboards:
 
-The dashboards provide visualizations for:
-- Event overview (counts by type, trends over time)
-- Product analytics (top viewed/purchased products, conversion rates)
-- Category analytics (top categories, trends)
+1. Ensure Elasticsearch and Kibana (local or Elastic Cloud) are running  
+2. For local setup, follow the instructions in [docs/KibanaDashboardSetup.md](docs/KibanaDashboardSetup.md)  
+3. For Elastic Cloud, use the Elastic Cloud console to import dashboards or use the [docs/kibana-dashboards-export.ndjson](docs/kibana-dashboards-export.ndjson) file via Kibana’s import feature  
+4. Dashboards provide visualizations for:  
+   - Event overview (counts by type, trends over time)  
+   - Product analytics (top viewed/purchased products, conversion rates)  
+   - Category analytics (top categories, trends)  
 
 ## Architecture Decisions
 
@@ -111,8 +119,16 @@ Redis is used for caching with different TTL (Time-To-Live) values based on data
 - Product data: Longer TTL as it changes less frequently
 - Analytics data: Shorter TTL as it's constantly updated
 
+### Logstash and Dual Sync Strategy
+
+Logstash is used to ingest data from local Elasticsearch instances to Elastic Cloud, ensuring centralized analytics and backup. This dual sync approach allows:
+- Fast local testing and development using local Elasticsearch
+- Centralized, scalable analytics and visualization on Elastic Cloud
+
 ## Future Enhancements
 
 - Recommendation engine based on user behavior
 - Time-series analysis for demand forecasting
 - AI agent for dynamic decision making
+- UI for managing dashboards and analytics settings
+- Cloud-native deployment with Docker and Podman
