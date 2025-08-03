@@ -2,7 +2,7 @@
 
 A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boot, MongoDB, Elasticsearch (local and Elastic Cloud), Redis, Kafka, and Logstash for comprehensive analytics and seamless data synchronization.
 
-## 📊 Sample Dashboards
+## Sample Dashboards
 
 <p align="center">
   <img src="docs/images/event-overview-dashboard.png" alt="Event Overview Dashboard" style="width:95%; margin: 0 auto; display: block;"/>
