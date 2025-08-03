@@ -20,7 +20,7 @@ A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boo
 - **Elasticsearch Integration**: Fast and powerful product search capabilities
 - **Redis Caching**: Improved performance with strategic caching
 - **PostgreSQL Integration**: Stores transactional data like orders, inventory, and user checkout details
-- **Real-time Analytics**: Process user events in real-time using Kafka
+- **Product Analytics**: Analyze user interaction data using Kafka and Elasticsearch
 - **Kibana Dashboards**: Visualize analytics data with pre-configured Kibana dashboards
 - **Logstash Integration**: Sync data to Elastic Cloud reliably using Logstash
 - **Real-time Sync**: Keep local and cloud Elasticsearch indices synchronized in real-time
@@ -90,12 +90,12 @@ The application follows a dual-write architecture:
 - `GET /api/analytics/trending-products` - Get trending products
 - `GET /api/analytics/product-conversion-rates` - Get product conversion rates
 
-### Real-time Analytics
+### Product Analytics
 
-- `GET /api/real-time-analytics/event-counts` - Get real-time event counts
-- `GET /api/real-time-analytics/top-viewed-products` - Get real-time top viewed products
-- `GET /api/real-time-analytics/top-purchased-products` - Get real-time top purchased products
-- `GET /api/real-time-analytics/conversion-rate/{productId}` - Get real-time conversion rate for a product
+- `GET /api/product-analytics/event-counts` - Get event counts
+- `GET /api/product-analytics/top-viewed-products` - Get top viewed products
+- `GET /api/product-analytics/top-purchased-products` - Get top purchased products
+- `GET /api/product-analytics/conversion-rate/{productId}` - Get conversion rate for a product
 
 ## Analytics with Kibana
 
