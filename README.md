@@ -4,9 +4,11 @@ A Real-Time E-commerce Analytics & Recommendation Platform built with Spring Boo
 
 ## Sample Dashboards
 
+<p align="center"><strong>Event Overview Dashboard</strong></p>
 <p align="center">
   <img src="docs/images/event-overview-dashboard.png" alt="Event Overview Dashboard" style="width:95%; margin: 0 auto; display: block;"/>
 </p>
+<p align="center"><strong>Product Insights Dashboard</strong></p>
 <p align="center">
   <img src="docs/images/product-insights-dashboard.png" alt="Product Insights Dashboard" style="width:95%; margin: 0 auto; display: block;"/>
 </p>
