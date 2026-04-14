@@ -18,6 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ecommerce.ecom_backend.model.Product;
 import com.ecommerce.ecom_backend.services.ProductService;
+import com.ecommerce.ecom_backend.services.VectorSearchService;
+import com.ecommerce.ecom_backend.services.VectorSearchService.SearchResult;
 
 import jakarta.validation.Valid;
 
@@ -30,6 +32,9 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+    
+    @Autowired
+    private VectorSearchService vectorSearchService;
 
     /**
      * Get all products.
@@ -200,5 +205,66 @@ public class ProductController {
     @GetMapping("/popular")
     public ResponseEntity<List<Product>> getMostPopularProducts(@RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(productService.getMostPopularProducts(limit));
+    }
+    
+    /**
+     * Semantic search for products using AI embeddings
+     * 
+     * @param query Natural language search query
+     * @param limit Maximum number of results (default: 10)
+     * @param category Optional category filter
+     * @param minPrice Optional minimum price filter
+     * @param maxPrice Optional maximum price filter
+     * @return List of products ranked by semantic similarity
+     */
+    @GetMapping("/semantic-search")
+    public ResponseEntity<List<SearchResult>> semanticSearch(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice) {
+        
+        try {
+            // Build filters
+            VectorSearchService.SearchFilters filters = new VectorSearchService.SearchFilters();
+            filters.setCategory(category);
+            filters.setMinPrice(minPrice);
+            filters.setMaxPrice(maxPrice);
+            
+            List<SearchResult> results = vectorSearchService.searchSimilarProducts(query, limit, filters);
+            return ResponseEntity.ok(results);
+            
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Semantic search failed: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Find products similar to a given product
+     * 
+     * @param id Product ID to find similar products for
+     * @param limit Maximum number of results (default: 5)
+     * @param category Optional category filter
+     * @return List of similar products with similarity scores
+     */
+    @GetMapping("/{id}/similar")
+    public ResponseEntity<List<SearchResult>> getSimilarProducts(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "5") int limit,
+            @RequestParam(required = false) String category) {
+        
+        try {
+            VectorSearchService.SearchFilters filters = new VectorSearchService.SearchFilters();
+            filters.setCategory(category);
+            
+            List<SearchResult> results = vectorSearchService.findSimilarProducts(id, limit, filters);
+            return ResponseEntity.ok(results);
+            
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Similar products search failed: " + e.getMessage());
+        }
     }
 }

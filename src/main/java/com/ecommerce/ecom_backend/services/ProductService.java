@@ -41,6 +41,9 @@ public class ProductService {
     @Autowired
     private CacheManager cacheManager;
     
+    @Autowired
+    private VectorSearchService vectorSearchService;
+    
     /**
      * Get all products.
      * 
@@ -96,6 +99,17 @@ public class ProductService {
         }
         
         Product savedProduct = productRepository.save(product);
+        
+        // Generate and store embedding for semantic search
+        try {
+            vectorSearchService.storeProductEmbedding(savedProduct);
+            logger.info("Generated embedding for product ID: {}", savedProduct.getId());
+        } catch (Exception e) {
+            logger.warn("Failed to generate embedding for product ID: {} - {}", 
+                       savedProduct.getId(), e.getMessage());
+            // Don't fail the product creation if embedding generation fails
+        }
+        
         /**
          * Publish the product creation event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}
          * after the transaction commits as it is annotated with @TransactionalEventListener.
@@ -150,6 +164,17 @@ public class ProductService {
         existingProduct.setUpdatedAt(Instant.now());
 
         Product savedProduct = productRepository.save(existingProduct);
+        
+        // Update embedding for semantic search
+        try {
+            vectorSearchService.storeProductEmbedding(savedProduct);
+            logger.info("Updated embedding for product ID: {}", savedProduct.getId());
+        } catch (Exception e) {
+            logger.warn("Failed to update embedding for product ID: {} - {}", 
+                       savedProduct.getId(), e.getMessage());
+            // Don't fail the product update if embedding generation fails
+        }
+        
         /*
          * Publish the product update event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange} 
          * after the transaction commits.
@@ -177,6 +202,17 @@ public class ProductService {
         
         Product product = getProductById(id);
         if (product == null) return false;
+        
+        // Delete embedding from vector database
+        try {
+            vectorSearchService.deleteProductEmbedding(id);
+            logger.info("Deleted embedding for product ID: {}", id);
+        } catch (Exception e) {
+            logger.warn("Failed to delete embedding for product ID: {} - {}", 
+                       id, e.getMessage());
+            // Continue with product deletion even if embedding deletion fails
+        }
+        
         productRepository.delete(product);
         /**
          * Publish the product deletion event. This will be handled by a {@link com.ecommerce.ecom_backend.search.ProductSearchService#handleProductChange}

@@ -31,3 +31,18 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Kiro AI IDE specs ###
+.kiro/
+
+### macOS ###
+.DS_Store
+**/.DS_Store
+
+### API Keys and Secrets ###
+**/application-local.properties
+**/*-local.properties
+.env
+.env.local
+**/*.key
+**/secrets/

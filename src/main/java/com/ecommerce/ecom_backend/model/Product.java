@@ -3,6 +3,9 @@ package com.ecommerce.ecom_backend.model;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -49,6 +52,12 @@ public class Product {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    // AI/ML: Vector embedding for semantic search
+    // Stores 768-dimensional vector as JSON string for similarity search
+    // Generated from product name + description using AI embedding models
+    @Column(columnDefinition = "TEXT")
+    private String embeddingJson;
 
     // Constructors
     public Product() {
@@ -125,6 +134,91 @@ public class Product {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getEmbeddingJson() {
+        return embeddingJson;
+    }
+
+    public void setEmbeddingJson(String embeddingJson) {
+        this.embeddingJson = embeddingJson;
+    }
+
+    // ============================================================================
+    // AI/ML EMBEDDING HELPER METHODS
+    // ============================================================================
+    
+    /**
+     * Set embedding vector by converting float array to JSON string
+     * This is the method you'll use in your business logic
+     * 
+     * @param embedding 768-dimensional float array from AI model
+     */
+    public void setEmbedding(float[] embedding) {
+        if (embedding == null) {
+            this.embeddingJson = null;
+            return;
+        }
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            this.embeddingJson = mapper.writeValueAsString(embedding);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert embedding to JSON", e);
+        }
+    }
+    
+    /**
+     * Get embedding vector by converting JSON string back to float array
+     * This is the method you'll use in your business logic
+     * 
+     * @return 768-dimensional float array for similarity calculations
+     */
+    public float[] getEmbedding() {
+        if (embeddingJson == null || embeddingJson.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(embeddingJson, float[].class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse embedding JSON: " + embeddingJson, e);
+        }
+    }
+    
+    /**
+     * Check if this product has an embedding vector
+     * Useful for filtering products that are ready for AI search
+     * 
+     * @return true if embedding exists and is not empty
+     */
+    public boolean hasEmbedding() {
+        return embeddingJson != null && !embeddingJson.trim().isEmpty() && !embeddingJson.equals("null");
+    }
+    
+    /**
+     * Get text representation for generating embeddings
+     * Combines name, category, and description for AI processing
+     * 
+     * @return formatted text string for embedding generation
+     */
+    public String getTextForEmbedding() {
+        StringBuilder text = new StringBuilder();
+        
+        if (name != null) {
+            text.append(name);
+        }
+        
+        if (category != null) {
+            text.append(" Category: ").append(category);
+        }
+        
+        if (description != null && !description.trim().isEmpty()) {
+            text.append(" Description: ").append(description);
+        }
+        
+        return text.toString().trim();
     }
 
     @Override

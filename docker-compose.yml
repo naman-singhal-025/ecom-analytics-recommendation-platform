@@ -101,9 +101,9 @@ services:
     volumes:
       - redis_data:/data
 
-   # PostgreSQL for transactional data
+   # PostgreSQL for transactional data with pgvector extension
   postgres:
-    image: postgres:16.4-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     container_name: postgres
     environment:

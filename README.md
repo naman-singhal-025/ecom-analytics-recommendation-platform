@@ -36,6 +36,8 @@ The application follows a dual-write architecture:
 - Kafka
 - Kibana (for analytics dashboards)
 - Logstash (for syncing data to Elastic Cloud)
+- PostgreSQL with pgvector (for vector storage)
+- Ollama (for local AI - free alternative to OpenAI)
 
 ### Running the Application
 
