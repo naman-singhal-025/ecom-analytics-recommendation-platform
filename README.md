@@ -99,6 +99,14 @@ To set up the dashboards:
    - Product analytics (top viewed/purchased products, conversion rates)  
    - Category analytics (top categories, trends)  
 
+### Dashboard Screenshots
+
+**Event Overview Dashboard**
+![Event Overview Dashboard](docs/images/event-overview-dashboard.png)
+
+**Product Insights Dashboard**
+![Product Insights Dashboard](docs/images/product-insights-dashboard.png)
+
 ## Architecture Decisions
 
 ### Dual-Write Architecture
